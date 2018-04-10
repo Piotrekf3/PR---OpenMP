@@ -1,0 +1,21 @@
+Klasyczny algorytm mnozenia macierzy, liczba watkow 4 
+Czas wykonania programu:   1.6720 sec (0.0010 sec rozdzielczosc pomiaru)
+Czas wykonania programu:   0.0940 sec (0.0010 sec rozdzielczosc pomiaru)
+Czas wykonania programu:   1.0160 sec (0.0010 sec rozdzielczosc pomiaru)
+Czas wykonania programu:   4.2040 sec (0.0010 sec rozdzielczosc pomiaru)
+Klasyczny algorytm mnozenia macierzy, liczba watkow 4 
+Czas wykonania programu:   4.2030 sec (0.0010 sec rozdzielczosc pomiaru)
+Klasyczny algorytm mnozenia macierzy, liczba watkow 4 
+Czas wykonania programu:   8.0470 sec (0.0010 sec rozdzielczosc pomiaru)
+Klasyczny algorytm mnozenia macierzy, liczba watkow 4 
+Czas wykonania programu:   4.2040 sec (0.0010 sec rozdzielczosc pomiaru)
+Klasyczny algorytm mnozenia macierzy, liczba watkow 4 
+Czas wykonania programu:   4.5010 sec (0.0010 sec rozdzielczosc pomiaru)
+Klasyczny algorytm mnozenia macierzy, liczba watkow 4 
+Czas wykonania programu:   4.2030 sec (0.0010 sec rozdzielczosc pomiaru)
+Czas wykonania programu:   7.4550 sec (0.0010 sec rozdzielczosc pomiaru)
+Klasyczny algorytm mnozenia macierzy, liczba watkow 4 
+Czas wykonania programu:   4.2190 sec (0.0010 sec rozdzielczosc pomiaru)
+Klasyczny algorytm mnozenia macierzy, liczba watkow 4 
+Czas wykonania programu:   4.2260 sec (0.0010 sec rozdzielczosc pomiaru)
+Czas wykonania programu:   6.8440 sec (0.0010 sec rozdzielczosc pomiaru)
