@@ -8,20 +8,33 @@
 #include <time.h>
 #include <windows.h>
 #include "omp.h"
+#include <iostream>
+
+using namespace std;
 
 #define USE_MULTIPLE_THREADS true
 #define MAXTHREADS 128
 int NumThreads;
 double start;
 
-static const int ROWS = 1000;     // liczba wierszy macierzy
-static const int COLUMNS = 1000;  // lizba kolumn macierzy
+static const int ROWS = 6;     // liczba wierszy macierzy
+static const int COLUMNS = 6;  // lizba kolumn macierzy
 
 float matrix_a[ROWS][COLUMNS];    // lewy operand 
 float matrix_b[ROWS][COLUMNS];    // prawy operand
-float matrix_r[ROWS][COLUMNS];    // wynik
+float matrix_r[ROWS][COLUMNS];   // wynik
+float matrix_seq[ROWS][COLUMNS];
 
 FILE *result_file;
+
+void printMatrix()
+{
+	for (int i = 0; i < ROWS; i++) {
+		for (int j = 0; j < COLUMNS; j++)
+			cout << matrix_r[i][j]<< " ";
+		cout << endl;
+	}
+}
 
 void initialize_matrices()
 {
@@ -46,6 +59,18 @@ void initialize_matricesZ()
 		}
 	}
 }
+
+void initialize_matricesSeq()
+{
+	// zdefiniowanie zawarosci poczatkowej macierzy
+#pragma omp parallel for 
+	for (int i = 0; i < ROWS; i++) {
+		for (int j = 0; j < COLUMNS; j++) {
+			matrix_seq[i][j] = 0.0;
+		}
+	}
+}
+
 void print_result()
 {
 	// wydruk wyniku
@@ -114,20 +139,49 @@ void multiply_matrices_KJI()
 	// mnozenie macierzy 
 #pragma omp parallel for 
 	for (int k = 0; k < COLUMNS; k++)
+	{
+		float matrix_local[ROWS][COLUMNS] = { 0 };
+		for (int j = 0; j < COLUMNS; j++)
+		for (int i = 0; i < ROWS; i++)
+			matrix_r[i][j] += matrix_a[i][k] * matrix_b[k][j];
+		for (int j = 0; j < COLUMNS; j++)
+		for (int i = 0; i < ROWS; i++)
+		{
+#pragma omp atomic
+			matrix_r[i][j] += matrix_local[i][j];
+		}
+				
+	}
+
+}
+
+bool comapreMatrices(float matrix_1[ROWS][COLUMNS], float matrix_2[ROWS][COLUMNS])
+{
+	for (int j = 0; j < COLUMNS; j++)
+		for (int i = 0; i < ROWS; i++)
+			if (matrix_1[i][j] != matrix_2[i][j])
+				return false;
+	return true;
+}
+
+void multiply_matrices_KJI_seq()
+{
+	// mnozenie macierzy  
+	for (int k = 0; k < COLUMNS; k++)
 	for (int j = 0; j < COLUMNS; j++)
 	for (int i = 0; i < ROWS; i++)
-		matrix_r[i][j] += matrix_a[i][k] * matrix_b[k][j];
+		matrix_seq[i][j] += matrix_a[i][k] * matrix_b[k][j];
 
 }
 
 void multiply_matrices_6loops()
 {
 	// mnozenie macierzy 
-	int r = 1;
-#pragma omp parallel for 
+	int r = 20;
+	for (int i = 0; i < ROWS; i += r)
+	for (int j = 0; j < COLUMNS; j += r)
 	for (int k = 0; k < COLUMNS; k+=r)
-	for (int j = 0; j < COLUMNS; j+=r)
-	for (int i = 0; i < ROWS; i+=r)
+#pragma omp parallel for 
 	for (int ii = i; ii < i + r; ii++)
 	for (int kk = k; kk < k + r; kk++)
 	for (int jj = j; jj < j + r; jj++)
@@ -154,6 +208,7 @@ void print_elapsed_time()
 
 int main(int argc, char* argv[])
 {
+	srand(time(NULL));
 	//	 start = (double) clock() / CLK_TCK ;
 	if ((result_file = fopen("classic.txt", "a")) == NULL) {
 		fprintf(stderr, "nie mozna otworzyc pliku wyniku \n");
@@ -175,8 +230,8 @@ int main(int argc, char* argv[])
 	fprintf(result_file, "Klasyczny algorytm mnozenia macierzy, liczba watkow %d \n", NumThreads);
 	printf("liczba watkow  = %d\n\n", NumThreads);
 
-	/*initialize_matrices();
-	start = (double)clock() / CLK_TCK;
+	initialize_matrices();
+	/*start = (double)clock() / CLK_TCK;
 	multiply_matrices_IJK();
 	printf("IJK ");
 	print_elapsed_time();
@@ -199,11 +254,29 @@ int main(int argc, char* argv[])
 	printf("JKI ");
 	print_elapsed_time();*/
 
-	initialize_matricesZ();
-	start = (double)clock() / CLK_TCK;
-	multiply_matrices_JKI();
-	printf("KJI ");
-	print_elapsed_time();
+	for (int i = 0; i < 1000; i++)
+	{
+		initialize_matricesZ();
+		start = (double)clock() / CLK_TCK;
+		multiply_matrices_KJI();
+		printMatrix();
+		printf("KJI ");
+		print_elapsed_time();
+
+		initialize_matricesSeq();
+		start = (double)clock() / CLK_TCK;
+		multiply_matrices_KJI_seq();
+		printMatrix();
+		printf("sekw ");
+		print_elapsed_time();
+		if (!comapreMatrices(matrix_r, matrix_seq))
+		{
+			cout << "Nie" << endl;
+			break;
+		}
+	}
+
+
 
 	initialize_matricesZ();
 	start = (double)clock() / CLK_TCK;
