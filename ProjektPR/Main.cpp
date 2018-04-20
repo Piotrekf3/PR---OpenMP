@@ -9,6 +9,7 @@
 #include <windows.h>
 #include "omp.h"
 #include <iostream>
+#include <iomanip>
 
 using namespace std;
 
@@ -17,21 +18,22 @@ using namespace std;
 int NumThreads;
 double start;
 
-static const int ROWS = 6;     // liczba wierszy macierzy
-static const int COLUMNS = 6;  // lizba kolumn macierzy
+static const int ROWS = 600;     // liczba wierszy macierzy
+static const int COLUMNS = 600;  // lizba kolumn macierzy
 
 float matrix_a[ROWS][COLUMNS];    // lewy operand 
 float matrix_b[ROWS][COLUMNS];    // prawy operand
 float matrix_r[ROWS][COLUMNS];   // wynik
 float matrix_seq[ROWS][COLUMNS];
+float matrix_local[ROWS][COLUMNS][4];
 
 FILE *result_file;
 
-void printMatrix()
+void printMatrix(const float matrix[ROWS][COLUMNS])
 {
 	for (int i = 0; i < ROWS; i++) {
 		for (int j = 0; j < COLUMNS; j++)
-			cout << matrix_r[i][j]<< " ";
+			cout <<matrix[i][j]<< " ";
 		cout << endl;
 	}
 }
@@ -56,6 +58,18 @@ void initialize_matricesZ()
 	for (int i = 0; i < ROWS; i++) {
 		for (int j = 0; j < COLUMNS; j++) {
 			matrix_r[i][j] = 0.0;
+		}
+	}
+}
+
+void initialize_matrices_local()
+{
+	// zdefiniowanie zawarosci poczatkowej macierzy
+#pragma omp parallel for 
+	for (int k = 0; k < 4;k++)
+	for (int i = 0; i < ROWS; i++) {
+		for (int j = 0; j < COLUMNS; j++) {
+			matrix_local[i][j][k] = 0.0;
 		}
 	}
 }
@@ -137,34 +151,49 @@ void multiply_matrices_JKI()
 void multiply_matrices_KJI()
 {
 	// mnozenie macierzy 
-#pragma omp parallel for 
-	for (int k = 0; k < COLUMNS; k++)
+	
+#pragma omp parallel
 	{
-		float matrix_local[ROWS][COLUMNS] = { 0 };
+		int id = omp_get_thread_num();
+#pragma omp for 
+		for (int k = 0; k < COLUMNS; k++)
 		for (int j = 0; j < COLUMNS; j++)
 		for (int i = 0; i < ROWS; i++)
-			matrix_r[i][j] += matrix_a[i][k] * matrix_b[k][j];
-		for (int j = 0; j < COLUMNS; j++)
-		for (int i = 0; i < ROWS; i++)
-		{
-#pragma omp atomic
-			matrix_r[i][j] += matrix_local[i][j];
-		}
-				
+			matrix_local[i][j][id] += matrix_a[i][k] * matrix_b[k][j];
 	}
-
+	for (int k = 0; k < 4; k++)
+	for (int j = 0; j < COLUMNS; j++)
+	for (int i = 0; i < ROWS; i++)
+	{
+		matrix_r[i][j] += matrix_local[i][j][k];
+	}
+	/*
+#pragma omp parallel for 
+		for (int k = 0; k < COLUMNS; k++)
+		{
+			for (int j = 0; j < COLUMNS; j++)
+			for (int i = 0; i < ROWS; i++)
+#pragma omp atomic
+				matrix_r[i][j] += matrix_a[i][k] * matrix_b[k][j];
+		}*/
 }
 
-bool comapreMatrices(float matrix_1[ROWS][COLUMNS], float matrix_2[ROWS][COLUMNS])
+bool compareMatrices(float matrix_1[ROWS][COLUMNS], float matrix_2[ROWS][COLUMNS])
 {
 	for (int j = 0; j < COLUMNS; j++)
 		for (int i = 0; i < ROWS; i++)
-			if (matrix_1[i][j] != matrix_2[i][j])
+		{
+			if (!(abs(matrix_1[i][j] - matrix_2[i][j])<0.001))
+			{
+				cout << setprecision(9) << matrix_1[i][j] << endl;
+				cout << setprecision(9) << matrix_2[i][j] << endl;
 				return false;
+			}
+		}
 	return true;
 }
 
-void multiply_matrices_KJI_seq()
+void multiply_matrices_IJK_seq()
 {
 	// mnozenie macierzy  
 	for (int k = 0; k < COLUMNS; k++)
@@ -177,7 +206,7 @@ void multiply_matrices_KJI_seq()
 void multiply_matrices_6loops()
 {
 	// mnozenie macierzy 
-	int r = 20;
+	int r = 100;
 	for (int i = 0; i < ROWS; i += r)
 	for (int j = 0; j < COLUMNS; j += r)
 	for (int k = 0; k < COLUMNS; k+=r)
@@ -189,7 +218,6 @@ void multiply_matrices_6loops()
 
 }
 
-
 void print_elapsed_time()
 {
 	double elapsed;
@@ -200,7 +228,6 @@ void print_elapsed_time()
 	resolution = 1.0 / CLK_TCK;
 	printf("Czas: %8.4f sec \n",
 		elapsed - start);
-
 	fprintf(result_file,
 		"Czas wykonania programu: %8.4f sec (%6.4f sec rozdzielczosc pomiaru)\n",
 		elapsed - start, resolution);
@@ -230,59 +257,66 @@ int main(int argc, char* argv[])
 	fprintf(result_file, "Klasyczny algorytm mnozenia macierzy, liczba watkow %d \n", NumThreads);
 	printf("liczba watkow  = %d\n\n", NumThreads);
 
-	initialize_matrices();
-	/*start = (double)clock() / CLK_TCK;
-	multiply_matrices_IJK();
-	printf("IJK ");
-	print_elapsed_time();
+	
 
-	initialize_matricesZ();
-	start = (double)clock() / CLK_TCK;
-	multiply_matrices_IKJ();
-	printf("IKJ ");
-	print_elapsed_time();
-
-	initialize_matricesZ();
-	start = (double)clock() / CLK_TCK;
-	multiply_matrices_JIK();
-	printf("JIK ");
-	print_elapsed_time();
-
-	initialize_matricesZ();
-	start = (double)clock() / CLK_TCK;
-	multiply_matrices_JKI();
-	printf("JKI ");
-	print_elapsed_time();*/
-
-	for (int i = 0; i < 1000; i++)
-	{
+	//for (int i = 0; i < 10; i++)
+	//{
+		initialize_matrices();
 		initialize_matricesZ();
+		initialize_matrices_local();
 		start = (double)clock() / CLK_TCK;
 		multiply_matrices_KJI();
-		printMatrix();
+		//printMatrix(matrix_r);
 		printf("KJI ");
 		print_elapsed_time();
 
-		initialize_matricesSeq();
+		/*initialize_matricesSeq();
 		start = (double)clock() / CLK_TCK;
-		multiply_matrices_KJI_seq();
-		printMatrix();
+		multiply_matrices_IJK_seq();
+		//printMatrix(matrix_seq);
 		printf("sekw ");
-		print_elapsed_time();
-		if (!comapreMatrices(matrix_r, matrix_seq))
+		print_elapsed_time();*/
+
+
+		/*if (!compareMatrices(matrix_r, matrix_seq))
 		{
 			cout << "Nie" << endl;
 			break;
-		}
-	}
+		}*/
 
 
 
+
+		/*initialize_matricesZ();
+		start = (double)clock() / CLK_TCK;
+		multiply_matrices_6loops();
+		//printMatrix(matrix_r);
+		printf("6 loops ");
+		print_elapsed_time();*/
+
+		/*initialize_matricesSeq();
+		start = (double)clock() / CLK_TCK;
+		multiply_matrices_KJI_seq();
+		//printMatrix(matrix_seq);
+		printf("sekw ");
+		print_elapsed_time();
+		if (!compareMatrices(matrix_r, matrix_seq))
+		{
+			cout << "Nie" << endl;
+			break;
+		}*/
+
+
+	//}
+
+	/*initialize_matrices();
 	initialize_matricesZ();
+	initialize_matrices_local();
 	start = (double)clock() / CLK_TCK;
-	multiply_matrices_6loops();
-	printf("6 loops ");
-	print_elapsed_time();
+	multiply_matrices_KJI();
+	//printMatrix(matrix_r);
+	printf("KJI ");
+	print_elapsed_time();*/
 
 	fclose(result_file);
 
