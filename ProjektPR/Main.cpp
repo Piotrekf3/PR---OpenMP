@@ -18,8 +18,8 @@ using namespace std;
 int NumThreads;
 double start;
 
-static const int ROWS = 600;     // liczba wierszy macierzy
-static const int COLUMNS = 600;  // lizba kolumn macierzy
+static const int ROWS = 1000;     // liczba wierszy macierzy
+static const int COLUMNS = 1000;  // lizba kolumn macierzy
 
 float matrix_a[ROWS][COLUMNS];    // lewy operand 
 float matrix_b[ROWS][COLUMNS];    // prawy operand
@@ -111,14 +111,13 @@ void multiply_matrices_IJK()
 	}
 }
 
-void multiply_matrices_IKJ()
+void multiply_matrices_IKJ_seq()
 {
 	// mnozenie macierzy 
-#pragma omp parallel for 
 	for (int i = 0; i < ROWS; i++)
 	for (int k = 0; k < COLUMNS; k++)
 	for (int j = 0; j < COLUMNS; j++)
-		matrix_r[i][j] += matrix_a[i][k] * matrix_b[k][j];
+		matrix_seq[i][j] += matrix_a[i][k] * matrix_b[k][j];
 
 }
 
@@ -193,7 +192,7 @@ bool compareMatrices(float matrix_1[ROWS][COLUMNS], float matrix_2[ROWS][COLUMNS
 	return true;
 }
 
-void multiply_matrices_IJK_seq()
+void multiply_matrices_KJI_seq()
 {
 	// mnozenie macierzy  
 	for (int k = 0; k < COLUMNS; k++)
@@ -206,7 +205,7 @@ void multiply_matrices_IJK_seq()
 void multiply_matrices_6loops()
 {
 	// mnozenie macierzy 
-	int r = 100;
+	int r = COLUMNS/5;
 	for (int i = 0; i < ROWS; i += r)
 	for (int j = 0; j < COLUMNS; j += r)
 	for (int k = 0; k < COLUMNS; k+=r)
@@ -262,17 +261,24 @@ int main(int argc, char* argv[])
 	//for (int i = 0; i < 10; i++)
 	//{
 		initialize_matrices();
-		initialize_matricesZ();
+		/*initialize_matricesZ();
 		initialize_matrices_local();
 		start = (double)clock() / CLK_TCK;
 		multiply_matrices_KJI();
 		//printMatrix(matrix_r);
 		printf("KJI ");
-		print_elapsed_time();
+		print_elapsed_time();*/
 
 		/*initialize_matricesSeq();
 		start = (double)clock() / CLK_TCK;
-		multiply_matrices_IJK_seq();
+		multiply_matrices_KJI_seq();
+		//printMatrix(matrix_seq);
+		printf("sekw ");
+		print_elapsed_time();*/
+
+		/*initialize_matricesSeq();
+		start = (double)clock() / CLK_TCK;
+		multiply_matrices_IKJ_seq();
 		//printMatrix(matrix_seq);
 		printf("sekw ");
 		print_elapsed_time();*/
@@ -287,12 +293,12 @@ int main(int argc, char* argv[])
 
 
 
-		/*initialize_matricesZ();
+		initialize_matricesZ();
 		start = (double)clock() / CLK_TCK;
 		multiply_matrices_6loops();
 		//printMatrix(matrix_r);
 		printf("6 loops ");
-		print_elapsed_time();*/
+		print_elapsed_time();
 
 		/*initialize_matricesSeq();
 		start = (double)clock() / CLK_TCK;
