@@ -269,12 +269,12 @@ int main(int argc, char* argv[])
 		printf("KJI ");
 		print_elapsed_time();*/
 
-		/*initialize_matricesSeq();
+		initialize_matricesSeq();
 		start = (double)clock() / CLK_TCK;
 		multiply_matrices_KJI_seq();
 		//printMatrix(matrix_seq);
 		printf("sekw ");
-		print_elapsed_time();*/
+		print_elapsed_time();
 
 		/*initialize_matricesSeq();
 		start = (double)clock() / CLK_TCK;
@@ -293,12 +293,12 @@ int main(int argc, char* argv[])
 
 
 
-		initialize_matricesZ();
+		/*initialize_matricesZ();
 		start = (double)clock() / CLK_TCK;
 		multiply_matrices_6loops();
 		//printMatrix(matrix_r);
 		printf("6 loops ");
-		print_elapsed_time();
+		print_elapsed_time();*/
 
 		/*initialize_matricesSeq();
 		start = (double)clock() / CLK_TCK;
